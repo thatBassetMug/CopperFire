@@ -6,18 +6,24 @@
 //
 
 import SwiftUI
-import Combine
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var model = CopperFireModel()
     @State private var showIntro = true
     @State private var timer: Timer?
     @State private var baseRadius: CGFloat = 20
     @State private var currentRadius: CGFloat = 20
+    @State private var viewSize: CGSize = .zero
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+
+            GeometryReader { geo in
+                Color.clear.onAppear { viewSize = geo.size }
+                    .onChange(of: geo.size) { _, size in viewSize = size }
+            }
 
             CopperCanvasView(model: model)
 
@@ -51,6 +57,10 @@ struct ContentView: View {
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
+                    // Ignore touches starting in the home indicator zone
+                    if model.activeTouch == nil && value.startLocation.y > viewSize.height - 40 {
+                        return
+                    }
                     if model.activeTouch == nil {
                         model.activeTouch = ActiveTouch(
                             startTime: CACurrentMediaTime(),
@@ -69,10 +79,9 @@ struct ContentView: View {
                     }
                 }
                 .onEnded { _ in
-                    if let at = model.activeTouch {
-                        let elapsed = CACurrentMediaTime() - at.startTime
-                        model.stampBloom(at: at.location, elapsed: elapsed, radius: at.radius)
-                    }
+                    guard let at = model.activeTouch else { return }
+                    let elapsed = CACurrentMediaTime() - at.startTime
+                    model.stampBloom(at: at.location, elapsed: elapsed, radius: at.radius)
                     model.activeTouch = nil
                 }
         )
@@ -88,9 +97,23 @@ struct ContentView: View {
                 }
         )
         .preferredColorScheme(.dark)
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                cancelTouch()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            cancelTouch()
+        }
         #if os(iOS)
         .statusBarHidden()
         #endif
+    }
+
+    private func cancelTouch() {
+        model.activeTouch = nil
+        timer?.invalidate()
+        timer = nil
     }
 
     private func startTimer() {
