@@ -9,31 +9,97 @@ import XCTest
 
 final class CopperFireUITests: XCTestCase {
 
+    private var app: XCUIApplication!
+
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launch()
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
+    }
+
+    // MARK: - Launch & Intro
+
+    @MainActor
+    func testIntroTextAppearsOnLaunch() throws {
+        let intro = app.staticTexts["introText"]
+        XCTAssertTrue(intro.waitForExistence(timeout: 3))
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    func testClearButtonExists() throws {
+        let clear = app.buttons["clearButton"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 3))
     }
+
+    // MARK: - Interactions
+
+    @MainActor
+    func testTapDismissesIntroText() throws {
+        let intro = app.staticTexts["introText"]
+        XCTAssertTrue(intro.waitForExistence(timeout: 3))
+
+        // Long press on the canvas area to trigger the drag gesture
+        let window = app.windows.firstMatch
+        window.press(forDuration: 0.5)
+
+        // Intro should disappear after interaction
+        XCTAssertTrue(intro.waitForNonExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testClearButtonIsTappable() throws {
+        let clear = app.buttons["clearButton"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 3))
+
+        // First draw something
+        let window = app.windows.firstMatch
+        window.press(forDuration: 0.5)
+
+        // Tap clear — should not crash
+        clear.tap()
+    }
+
+    @MainActor
+    func testDragGestureDoesNotCrash() throws {
+        let window = app.windows.firstMatch
+
+        // Perform a drag across the screen
+        let start = window.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5))
+        let end = window.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: end)
+
+        // App should still be running
+        XCTAssertTrue(app.windows.firstMatch.exists)
+    }
+
+    @MainActor
+    func testMultipleDragsThenClear() throws {
+        let window = app.windows.firstMatch
+
+        // Multiple drags
+        for i in stride(from: 0.2, to: 0.8, by: 0.2) {
+            let start = window.coordinate(withNormalizedOffset: CGVector(dx: i, dy: 0.3))
+            let end = window.coordinate(withNormalizedOffset: CGVector(dx: i, dy: 0.7))
+            start.press(forDuration: 0.1, thenDragTo: end)
+        }
+
+        // Clear
+        let clear = app.buttons["clearButton"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 3))
+        clear.tap()
+
+        // App should still be responsive
+        XCTAssertTrue(window.exists)
+    }
+
+    // MARK: - Performance
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }

@@ -30,6 +30,7 @@ struct ContentView: View {
                     .padding(.bottom, 40)
                     .transition(.opacity)
                     .allowsHitTesting(false)
+                    .accessibilityIdentifier("introText")
             }
 
             VStack {
@@ -42,6 +43,7 @@ struct ContentView: View {
                     .tracking(3)
                     .foregroundStyle(.white.opacity(0.2))
                     .padding(20)
+                    .accessibilityIdentifier("clearButton")
                 }
                 Spacer()
             }
