@@ -1,0 +1,33 @@
+# Xcode
+*.xcuserstate
+*.xcuserdatad
+*.pbxuser
+*.xcscmblueprint
+xcuserdata/
+
+# Derived data
+DerivedData/
+
+# Archives
+*.xcarchive
+
+# Build Products
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Temporary files
+*.tmp
+*.swp
+.DS_Store
+
+# Environment variables
+.env
+
+# Claude Code
+.claude/
